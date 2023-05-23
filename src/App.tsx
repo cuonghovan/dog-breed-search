@@ -1,162 +1,183 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import defaultImage from './images/dog.png'
-import './App.css'
+import { ToastContainer, toast } from 'react-toastify';
+import { BreedTable, ErrorToast } from './components';
+import { Breed } from './types';
+import defaultImage from './images/dog.png';
+import 'react-toastify/dist/ReactToastify.css';
 
 enum SORT_OPTION {
-  NAME = 'name',
-  HEIGHT = 'height',
-  LIFESPAN = 'lifespan' 
+	NAME = 'name',
+	HEIGHT = 'height',
+	LIFESPAN = 'lifespan',
 }
 
 function App() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [breeds, setBreeds] = useState([])
-  const [selectedSortOption, setSelectedSortOption] = useState<SORT_OPTION>(SORT_OPTION.NAME)
+	const [searchTerm, setSearchTerm] = useState<string>('');
+	const [breeds, setBreeds] = useState<Breed[]>([]);
+	const [selectedSortOption, setSelectedSortOption] = useState<SORT_OPTION>(
+		SORT_OPTION.NAME
+	);
+	const [loading, setLoading] = useState<boolean>(false);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>)=> {
-    setSearchTerm(e.target.value)
-  }
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchTerm(e.target.value);
+	};
 
-  useEffect(() => {
-    const searchDelay = setTimeout(() => {
-      const baseRequestOptions = {
-        baseURL: 'https://api.thedogapi.com/v1',
-        headers: {
-          'x-api-key': process.env.REACT_APP_DOG_API_KEY
-        }
-      }
+	useEffect(() => {
+		const timerId = setTimeout(async () => {
+			const baseRequestOptions = {
+				baseURL: 'https://api.thedogapi.com/v1',
+				headers: {
+					'x-api-key': process.env.REACT_APP_DOG_API_KEY,
+				},
+			};
 
-      axios.get('/breeds/search?q=' + searchTerm, {
-        ...baseRequestOptions,
-      }).then(async function(response) {
-        const breeds = response.data
-        const imageMap = new Map()
-        const imgRequests = breeds.map((breed:any) => {
-          if (breed.reference_image_id) {
-            return axios.get('/images/' + breed.reference_image_id, {
-              ...baseRequestOptions,
-            }).then(function(response) {
-              const image = response.data
-              if(!imageMap.has(image.id)) {
-                imageMap.set(image.id, image.url)
-              }
-            }).catch(function(error) {
-              console.log(error)
-            })
-          }
-          return null
-        })
+			try {
+				setLoading(true);
+				const breedResponse = await axios.get(
+					'/breeds/search?q=' + searchTerm,
+					{
+						...baseRequestOptions,
+					}
+				);
+				const breeds = breedResponse.data;
 
-        // Wait until all images downloaded
-        await Promise.all(imgRequests)
-        breeds.forEach((breed: any, index: number) => {
-          breeds[index] = {...breed, imageUrl: breed.reference_image_id ? imageMap.get(breed.reference_image_id) : defaultImage}
-        })
-        setBreeds(breeds)
-        setSelectedSortOption(SORT_OPTION.NAME)
-      }).catch(function(error) {
-        console.log(error)
-      })
-    }, 1000)
+				const breedWithImages = await Promise.all(
+					breeds.map(async (breed: Breed) => {
+						let image = defaultImage;
+						if (breed.reference_image_id) {
+							const imageResponse = await axios.get(
+								'/images/' + breed.reference_image_id,
+								{
+									...baseRequestOptions,
+								}
+							);
+							image = imageResponse.data.url;
+						}
+						return { ...breed, image };
+					})
+				);
 
-    return () => clearTimeout(searchDelay)
-  }, [searchTerm])
+				setBreeds(breedWithImages);
+			} catch (error) {
+				console.log(error);
+				toast.error(<ErrorToast />);
+			} finally {
+				setLoading(false);
+			}
+		}, 1000);
 
-  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOption = e.target.value as SORT_OPTION
-    setSelectedSortOption(selectedOption)
+		return () => clearTimeout(timerId);
+	}, [searchTerm]);
 
-    switch(selectedOption) {
-      case SORT_OPTION.NAME:
-        sortByName()
-        break
-      case SORT_OPTION.HEIGHT:
-        sortByHeight()
-        break
-      case SORT_OPTION.LIFESPAN:
-        sortByLifespan()
-        break
-      default:
-        sortByName()
-        break
-    }
-  }
+	const sortByName = (breeds: Breed[]) => {
+		breeds.sort((breedA: any, breedB: any) => {
+			const breedAName = breedA.name.toLowerCase();
+			const breedBName = breedB.name.toLowerCase();
+			if (breedAName < breedBName) return -1;
+			if (breedAName > breedBName) return 1;
+			return 0;
+		});
+	};
 
-  const sortByName = () => {
-    const sortedBreeds = [...breeds]
-    sortedBreeds.sort((breedA: any, breedB: any) => {
-      if (breedA.name < breedB.name) return -1;
-      if (breedA.name > breedB.name) return 1;
-      return 0;
-    })
-    setBreeds(sortedBreeds)
-  }
+	const sortByHeight = (breeds: Breed[]) => {
+		breeds.sort((breedA: any, breedB: any) => {
+			const heightA = parseFloat(breedA.height.metric.split(' - ')[0]);
+			const heightB = parseFloat(breedB.height.metric.split(' - ')[0]);
+			return heightA - heightB;
+		});
+	};
 
-  const sortByHeight = () => {
-    const sortedBreeds = [...breeds]
-    sortedBreeds.sort((breedA: any, breedB: any) => {
-      const imperialA = parseFloat(breedA.height.imperial.split(' - ')[0])
-      const imperialB = parseFloat(breedB.height.imperial.split(' - ')[0])
-      return imperialA - imperialB
-    })
-    setBreeds(sortedBreeds)
-  }
+	const sortByLifespan = (breeds: Breed[]) => {
+		breeds.sort((breedA: any, breedB: any) => {
+			const lifespanA = parseFloat(breedA.life_span.match(/\d+/g)[0]);
+			const lifespanB = parseFloat(breedB.life_span.match(/\d+/g)[0]);
+			return lifespanA - lifespanB;
+		});
+	};
 
-  const sortByLifespan = () => {
-    const sortedBreeds = [...breeds]
-    sortedBreeds.sort((breedA: any, breedB: any) => {
-      const lifespanA = parseFloat(breedA.life_span.match(/\d+/g)[0])
-      const lifespanB = parseFloat(breedB.life_span.match(/\d+/g)[0])
-      return lifespanA - lifespanB
-    })
-    setBreeds(sortedBreeds)
-  }
+	const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const selectedOption = e.target.value as SORT_OPTION;
+		setSelectedSortOption(selectedOption);
+	};
 
-  return (
-    <div className='container mx-auto px-4 min-h-screen bg-cyan-50'>
-      <header className='flex justify-center pt-16 text-3xl capitalize'>Search Dogs</header>
-      <section className='flex justify-center mt-16'>
-          <input className='w-80 p-4 rounded-md' type='text' placeholder='Enter breed name' value={searchTerm} onChange={handleSearchChange} />
-          <select className='w-30 p-4 ml-4 bg-white' value={selectedSortOption} onChange={handleSortChange}>
-            <option value={SORT_OPTION.NAME} defaultChecked>Name</option>
-            <option value={SORT_OPTION.HEIGHT}>Height</option>
-            <option value={SORT_OPTION.LIFESPAN}>Lifespan</option>
-          </select>
-      </section>
-      <section className='mt-16'>
-          <table className='table-auto min-w-full boder-b-2 border-gray-200'>
-            <thead>
-              <tr>
-                <th className='px-5 py-3 border-b-2 border-gray-200 bg-gray-100 w-1/3 text-left text-xs font-semibold text-gray-700 uppercase'>Image</th>
-                <th className='px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase'>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {breeds.length > 0 ?
-                <>
-                  {breeds.map((breed: any) => (
-                    <tr key={breed.id}>
-                      <td className='px-5 py-5 border-b border-gray-200 bg-white text-sm'><img src={breed.imageUrl} alt={breed.name} width='300' height='auto' /></td>
-                      <td className='px-5 py-5 border-b border-gray-200 bg-white text-sm'>
-                        <ul>
-                          <li><b>Name:</b> {breed.name}</li>
-                          <li><b>Height:</b> {breed.height.imperial} inches</li>
-                          <li><b>Lifespan:</b> {breed.life_span}</li>
-                        </ul>
-                      </td>
-                    </tr>
-                  ))}
-                </>
-                : <tr>
-                  <td colSpan={2} className='px-5 py-5 border-b border-gray-200 bg-white text-sm'>No dog to be shown</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-      </section>
-    </div>
-  )
+	const sortedBreeds = useMemo(() => {
+		const breedsCopy = [...breeds];
+		switch (selectedSortOption) {
+			case SORT_OPTION.NAME:
+				sortByName(breedsCopy);
+				break;
+			case SORT_OPTION.HEIGHT:
+				sortByHeight(breedsCopy);
+				break;
+			case SORT_OPTION.LIFESPAN:
+				sortByLifespan(breedsCopy);
+				break;
+			default:
+				sortByName(breedsCopy);
+				break;
+		}
+		return breedsCopy;
+	}, [breeds, selectedSortOption]);
+
+	return (
+		<div className='container mx-auto px-4 min-h-screen bg-cyan-50'>
+			<header className='flex justify-center pt-16 text-3xl capitalize'>
+				Explore Dog Breeds
+			</header>
+			<section className='flex justify-center mt-16'>
+				<input
+					className='w-80 p-4 rounded-md outline-none'
+					type='text'
+					placeholder='Enter a dog breed name'
+					value={searchTerm}
+					onChange={handleSearchChange}
+				/>
+				<div className='relative ml-4'>
+					<select
+						className='w-32 p-4 rounded-md bg-white appearance-none outline-none'
+						value={selectedSortOption}
+						onChange={handleSortChange}
+					>
+						<option value={SORT_OPTION.NAME} defaultChecked>
+							Name
+						</option>
+						<option value={SORT_OPTION.HEIGHT}>Height</option>
+						<option value={SORT_OPTION.LIFESPAN}>Lifespan</option>
+					</select>
+					<div className='pointer-events-none absolute inset-y-0 right-0 flex items-center px-4'>
+						<svg
+							className='w-4 h-4'
+							viewBox='0 0 20 20'
+							fill='currentColor'
+							aria-hidden='true'
+						>
+							<path fillRule='evenodd' d='M6 8l4 4 4-4' />
+						</svg>
+					</div>
+				</div>
+			</section>
+			<section className='mt-16 relative'>
+				{loading && (
+					<div className='absolute t-0 l-0  w-full h-full z-100 animate-pulse bg-slate-100 bg-opacity-70'></div>
+				)}
+				<BreedTable breeds={sortedBreeds} />
+			</section>
+			<ToastContainer
+				position='bottom-right'
+				autoClose={5000}
+				hideProgressBar={false}
+				newestOnTop={false}
+				closeOnClick
+				rtl={false}
+				pauseOnFocusLoss
+				draggable
+				pauseOnHover
+				theme='light'
+			/>
+		</div>
+	);
 }
 
 export default App;
