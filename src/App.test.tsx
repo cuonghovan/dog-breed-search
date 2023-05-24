@@ -12,23 +12,16 @@ import App from './App';
 jest.mock('axios');
 
 describe('App', () => {
-	test('render app correctly', async () => {
-		render(<App />);
+	beforeEach(() => {
+		jest.useFakeTimers()
+	})
 
-		expect(screen.getByText('Explore Dog Breeds')).toBeInTheDocument();
-		expect(
-			screen.getByPlaceholderText('Enter a dog breed name')
-		).toBeInTheDocument();
-		expect(screen.getByRole('combobox')).toBeInTheDocument();
-		expect(screen.getByRole('table')).toBeInTheDocument();
-		expect(screen.getByRole('cell')).toHaveTextContent(
-			'No matching dog breeds found.'
-		);
-	});
+	afterEach(() => {
+		jest.runOnlyPendingTimers()
+		jest.useRealTimers()
+	})
 
 	test('user input should be debounced for 1 sec', async () => {
-		jest.useFakeTimers();
-
 		(axios.get as jest.Mock).mockImplementation(() => {
 			return Promise.resolve({
 				data: [
@@ -50,6 +43,15 @@ describe('App', () => {
 		});
 
 		render(<App />);
+		expect(screen.getByText('Explore Dog Breeds')).toBeInTheDocument();
+		expect(
+			screen.getByPlaceholderText('Enter a dog breed name')
+		).toBeInTheDocument();
+		expect(screen.getByRole('combobox')).toBeInTheDocument();
+		expect(screen.getByRole('table')).toBeInTheDocument();
+		expect(screen.getByRole('cell')).toHaveTextContent(
+			'No matching dog breeds found.'
+		);
 
 		const searchInput = screen.getByPlaceholderText('Enter a dog breed name');
 		fireEvent.change(searchInput, { target: { value: 'b' } });
@@ -62,13 +64,9 @@ describe('App', () => {
 			headers: { 'x-api-key': process.env.REACT_APP_DOG_API_KEY },
 		});
 		expect(await screen.findByText('Bulldog A')).toBeInTheDocument();
-
-		jest.useRealTimers();
 	});
 
 	test('fetch dog breeds with images then sort results correctly', async () => {
-		jest.useFakeTimers();
-
 		const mockBreeds: any[] = [
 			{
 				id: 1,
@@ -167,18 +165,15 @@ describe('App', () => {
 				target: { value: sortData.sortOption },
 			});
 			const firstRow = screen.getAllByRole('row')[1];
-			const firstDescriptionCell = within(firstRow).getAllByRole('cell')[1];
-			const textContent = within(firstDescriptionCell).getByText(
+			const firstInformationCell = within(firstRow).getAllByRole('cell')[1];
+			const textContent = within(firstInformationCell).getByText(
 				sortData.firstDogName
 			);
 			expect(!!textContent).toBe(true);
 		});
-
-		jest.useRealTimers();
 	});
 
 	test('handle errors when fetching dog breeds', async () => {
-		jest.useFakeTimers();
 		const consoleSpy = jest.spyOn(console, 'log');
 
 		(axios.get as jest.Mock).mockImplementation(() => Promise.reject('abc'));
@@ -192,11 +187,9 @@ describe('App', () => {
 		await waitFor(() => expect(consoleSpy).toHaveBeenLastCalledWith('abc'));
 
 		consoleSpy.mockRestore();
-		jest.useRealTimers();
 	});
 
 	test('handle errors when fetching images', async () => {
-		jest.useFakeTimers();
 		const consoleSpy = jest.spyOn(console, 'log');
 		const mockBreeds: any[] = [
 			{
@@ -233,6 +226,5 @@ describe('App', () => {
 		await waitFor(() => expect(consoleSpy).toHaveBeenLastCalledWith('xyz'));
 
 		consoleSpy.mockRestore();
-		jest.useRealTimers();
 	});
 });
