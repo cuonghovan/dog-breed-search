@@ -106,7 +106,7 @@ describe('App', () => {
 				life_span: '4 - 10 years',
 				reference_image_id: 'abc3',
 				weight: {
-					imperial: '30 - 150',
+					imperial: '30 - 140',
 					metric: '14 - 68',
 				},
 				country_code: 'US',
