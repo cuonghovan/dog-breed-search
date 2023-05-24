@@ -9,7 +9,7 @@ import 'react-toastify/dist/ReactToastify.css';
 enum SORT_OPTION {
 	NAME = 'name',
 	HEIGHT = 'height',
-	LIFESPAN = 'lifespan',
+	LIFESPAN = 'lifespan'
 }
 
 function App() {
