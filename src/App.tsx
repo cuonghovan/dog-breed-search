@@ -158,7 +158,7 @@ function App() {
 			</section>
 			<section className='mt-16 relative'>
 				{loading && (
-					<div className='absolute t-0 l-0  w-full h-full z-100 animate-pulse bg-slate-100 bg-opacity-75'></div>
+					<div className='absolute t-0 l-0  w-full h-full z-100 animate-pulse bg-slate-100 bg-opacity-70'></div>
 				)}
 				<BreedTable breeds={sortedBreeds} />
 			</section>
