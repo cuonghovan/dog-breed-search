@@ -15,9 +15,7 @@ enum SORT_OPTION {
 function App() {
 	const [searchTerm, setSearchTerm] = useState<string>('');
 	const [breeds, setBreeds] = useState<Breed[]>([]);
-	const [selectedSortOption, setSelectedSortOption] = useState<SORT_OPTION>(
-		SORT_OPTION.NAME
-	);
+	const [selectedSortOption, setSelectedSortOption] = useState<SORT_OPTION>(SORT_OPTION.NAME);
 	const [loading, setLoading] = useState<boolean>(false);
 
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
