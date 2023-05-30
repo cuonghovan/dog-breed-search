@@ -116,29 +116,11 @@ describe('App', () => {
 					'Strong Willed, Stubborn, Friendly, Clownish, Affectionate, Loyal, Obedient, Intelligent, Courageous',
 			},
 		];
-		const mockImageA: any = {
-			id: 'abc1',
-			url: 'https://example.com/bulldogA.png',
-		};
-		const mockImageB: any = {
-			id: 'abc2',
-			url: 'https://example.com/bulldogB.png',
-		};
-		const mockImageC: any = {
-			id: 'abc3',
-			url: 'https://example.com/bulldogC.png',
-		};
 
 		(axios.get as jest.Mock).mockImplementation((url) => {
 			switch (url) {
 				case '/breeds/search?q=bulldog':
 					return Promise.resolve({ data: mockBreeds });
-				case '/images/abc1':
-					return Promise.resolve({ data: mockImageA });
-				case '/images/abc2':
-					return Promise.resolve({ data: mockImageB });
-				case '/images/abc3':
-					return Promise.resolve({ data: mockImageC });
 				default:
 					return Promise.reject(new Error('not found'));
 			}
@@ -185,45 +167,6 @@ describe('App', () => {
 		});
 		act(() => jest.advanceTimersByTime(1000));
 		await waitFor(() => expect(consoleSpy).toHaveBeenLastCalledWith('abc'));
-
-		consoleSpy.mockRestore();
-	});
-
-	test('handle errors when fetching images', async () => {
-		const consoleSpy = jest.spyOn(console, 'log');
-		const mockBreeds: any[] = [
-			{
-				id: 1,
-				name: 'Bulldog A',
-				height: { metric: '52 - 56' },
-				life_span: '6 - 10 years',
-				reference_image_id: 'abc1',
-				weight: {
-					imperial: '60 - 120',
-					metric: '27 - 54',
-				},
-				breed_group: 'Working',
-				temperament:
-					'Friendly, Assertive, Energetic, Loyal, Gentle, Confident, Dominant'
-			},
-		];
-		(axios.get as jest.Mock).mockImplementation((url) => {
-			switch (url) {
-				case '/breeds/search?q=bulldog':
-					return Promise.resolve({ data: mockBreeds });
-				case '/images/abc1':
-					return Promise.reject('xyz');
-			}
-		});
-
-		render(<App />);
-
-		fireEvent.change(screen.getByPlaceholderText('Enter a dog breed name'), {
-			target: { value: 'bulldog' },
-		});
-		act(() => jest.advanceTimersByTime(1000));
-
-		await waitFor(() => expect(consoleSpy).toHaveBeenLastCalledWith('xyz'));
 
 		consoleSpy.mockRestore();
 	});

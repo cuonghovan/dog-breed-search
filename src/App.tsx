@@ -40,24 +40,14 @@ function App() {
 					}
 				);
 				const breeds = breedResponse.data;
-
-				const breedWithImages = await Promise.all(
-					breeds.map(async (breed: Breed) => {
-						let image = defaultImage;
-						if (breed.reference_image_id) {
-							const imageResponse = await axios.get(
-								'/images/' + breed.reference_image_id,
-								{
-									...baseRequestOptions,
-								}
-							);
-							image = imageResponse.data.url;
-						}
-						return { ...breed, image };
-					})
-				);
-
-				setBreeds(breedWithImages);
+				breeds.forEach((breed: Breed, index: number, arr: Breed[]) => {
+					if (breed.reference_image_id) {
+						arr[index] = {...breed, image: `https://cdn2.thedogapi.com/images/${breed.reference_image_id}.jpg`}
+					} else {
+						arr[index] = {...breed, image: defaultImage}
+					}
+				})
+				setBreeds(breeds);
 			} catch (error) {
 				console.log(error);
 				toast.error(<ErrorToast />);
