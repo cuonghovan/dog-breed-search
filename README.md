@@ -1,3 +1,11 @@
+# About this app
+
+A dog breed search tool for dog lovers
+
+Live demo: [https://7qnhv7-3000.csb.app/](https://7qnhv7-3000.csb.app/)
+
+<img width="1411" alt="Screen Shot 2023-05-30 at 12 06 08" src="https://github.com/cuonghovan/dog-breed-search/assets/7236073/46ce843c-21c1-4245-8593-d0870b5ced35">
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
