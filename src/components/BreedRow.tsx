@@ -1,6 +1,5 @@
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { Breed } from './../types';
-import defaultImage from './../images/dog.png';
 import pulse from './../images/pulse.gif';
 
 interface BreedRowProps {
@@ -17,7 +16,7 @@ const BreedRow: React.FC<BreedRowProps> = ({ breed }) => (
 					className='w-full h-auto'
 					onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
 						const target = e.target as HTMLImageElement;
-						target.src = defaultImage;
+						target.src = `https://cdn2.thedogapi.com/images/${breed.reference_image_id}.png`;
 					}}
 					placeholderSrc={pulse}
 				/>
