@@ -41,11 +41,8 @@ function App() {
 				);
 				const breeds = breedResponse.data;
 				breeds.forEach((breed: Breed, index: number, arr: Breed[]) => {
-					if (breed.reference_image_id) {
-						arr[index] = {...breed, image: `https://cdn2.thedogapi.com/images/${breed.reference_image_id}.jpg`}
-					} else {
-						arr[index] = {...breed, image: defaultImage}
-					}
+					const breedImage = breed.reference_image_id ? `https://cdn2.thedogapi.com/images/${breed.reference_image_id}.jpg` : defaultImage
+					arr[index] = {...breed, image: breedImage}
 				})
 				setBreeds(breeds);
 			} catch (error) {
